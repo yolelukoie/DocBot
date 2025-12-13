@@ -6,7 +6,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py Соглашение.pdf . 
->>>>>>> a8931b4 (chenge)
 
 ENV PORT=8080
 
