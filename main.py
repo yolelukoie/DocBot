@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 # --- Конфиг через переменные окружения ---
 
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT", "")
 if not TELEGRAM_TOKEN:
     logger.warning("TELEGRAM_TOKEN is not set. Bot will not work until it's provided.")
 
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 
 # Локальный путь к шаблону документа внутри контейнера
-TEMPLATE_PATH = os.environ.get("TEMPLATE_PATH", "template.pdf")
+TEMPLATE_PATH = os.environ.get("TEMPLATE_PATH", "Соглашение.pdf")
 
 # Короткое "название документа" для имени файла, например: "dogovor" или "Договор"
 DOCUMENT_SUFFIX = os.environ.get("DOCUMENT_SUFFIX", "document")
