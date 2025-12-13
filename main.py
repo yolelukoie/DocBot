@@ -6,7 +6,7 @@ import logging
 import requests
 from flask import Flask, request, jsonify
 
-from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
@@ -21,32 +21,38 @@ if not TELEGRAM_TOKEN:
 
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 
-# Локальный путь к шаблону документа внутри контейнера
 TEMPLATE_PATH = os.environ.get("TEMPLATE_PATH", "Соглашение.pdf")
-
-# Короткое "название документа" для имени файла, например: "dogovor" или "Договор"
-DOCUMENT_SUFFIX = os.environ.get("DOCUMENT_SUFFIX", "document")
-
-# ID папки на Google Диске, куда складывать подписанные файлы
+DOCUMENT_SUFFIX = os.environ.get("DOCUMENT_SUFFIX", "Соглашение")
 DRIVE_FOLDER_ID = os.environ.get("DRIVE_FOLDER_ID", "")
-
-# JSON сервисного аккаунта Google (как строка)
 GOOGLE_SA_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
 
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", "")
 drive_service = None
 
 
 def get_drive_service():
-    """Ленивая инициализация клиента Google Drive."""
+    """Создаём Drive-клиент от имени реального пользователя по OAuth."""
     global drive_service
     if drive_service is not None:
         return drive_service
-    if not GOOGLE_SA_JSON:
-        raise RuntimeError("GOOGLE_SERVICE_ACCOUNT_JSON env var is not set")
-    info = json.loads(GOOGLE_SA_JSON)
-    creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+
+    if not (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN):
+        raise RuntimeError(
+            "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN must be set"
+        )
+
+    creds = Credentials(
+        token=None,
+        refresh_token=GOOGLE_REFRESH_TOKEN,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        scopes=SCOPES,
+    )
+
     drive_service = build("drive", "v3", credentials=creds, cache_discovery=False)
     return drive_service
 
