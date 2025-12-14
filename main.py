@@ -221,6 +221,18 @@ def handle_file_message(message: dict):
     chat_id = message["chat"]["id"]
     caption = message.get("caption", "") or ""
 
+    from_user = message.get("from", {}) or {}
+    username = from_user.get("username")
+    first_name = from_user.get("first_name", "")
+    last_name = from_user.get("last_name", "")
+
+    if username:
+        tg_handle = f"@{username}"
+    else:
+        # fallback, если у пользователя нет username
+        display_name = " ".join(x for x in [first_name, last_name] if x).strip()
+        tg_handle = display_name if display_name else f"id:{chat_id}"
+
     # Без подписи с именем — просим переслать файл с подписью
     if not caption.strip():
         telegram_send_message(
@@ -266,8 +278,7 @@ def handle_file_message(message: dict):
         upload_to_drive(filename, content)
         telegram_send_message(chat_id, "Спасибо! Файл принят и сохранён.")
         notify_text = (
-            "Новое подписанное соглашение.\n"
-            f"Имя: {caption.strip()}\n"
+            f"Новое подписанное соглашение.\nИмя: {caption.strip()} \nКонтакт: {tg_handle}"
         )
         telegram_notify_admin(notify_text)
 
