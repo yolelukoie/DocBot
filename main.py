@@ -6,6 +6,7 @@ import logging
 import requests
 from flask import Flask, request, jsonify
 
+from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
@@ -31,33 +32,22 @@ DRIVE_FOLDER_ID = os.environ.get("DRIVE_FOLDER_ID", "")
 NOTIFY_CHAT_ID = os.environ.get("NOTIFY_CHAT_ID", "").strip()
 
 # OAuth-конфиг для доступа к Google Drive от имени реального пользователя
-SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", "")
+SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 drive_service = None
 
-
 def get_drive_service():
-    """Создаём Drive-клиент от имени реального пользователя по OAuth."""
+    """Create Drive client using a Service Account JSON from env."""
     global drive_service
     if drive_service is not None:
         return drive_service
 
-    if not (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN):
-        raise RuntimeError(
-            "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN must be set"
-        )
+    sa_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+    if not sa_json:
+        raise RuntimeError("GOOGLE_SERVICE_ACCOUNT_JSON must be set")
 
-    creds = Credentials(
-        token=None,
-        refresh_token=GOOGLE_REFRESH_TOKEN,
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET,
-        scopes=SCOPES,
-    )
+    info = json.loads(sa_json)
+    creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
 
     drive_service = build("drive", "v3", credentials=creds, cache_discovery=False)
     return drive_service
@@ -164,8 +154,8 @@ def upload_to_drive(name: str, content: bytes):
         body=file_metadata,
         media_body=media,
         fields="id",
+        supportsAllDrives=True,
     ).execute()
-    logger.info("Uploaded file to Drive: id=%s name=%s", created.get("id"), name)
 
 
 def sanitize_name(raw: str) -> str:
