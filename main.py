@@ -225,7 +225,7 @@ def handle_file_message(message: dict):
         # fallback, если у пользователя нет username
         display_name = " ".join(x for x in [first_name, last_name] if x).strip()
         tg_handle = display_name if display_name else f"id:{chat_id}"
-
+    """
     # Без подписи с именем — просим переслать файл с подписью
     if not caption.strip():
         telegram_send_message(
@@ -234,7 +234,7 @@ def handle_file_message(message: dict):
             "Пожалуйста, отправь файл ещё раз и в подписи к файлу укажите ваше имя и фамилию. Это важно 🫶🏻",
         )
         return
-
+    """
     name_part = sanitize_name(caption)
     logger.info("Using name from caption: %s", name_part)
 
@@ -297,8 +297,7 @@ def handle_update(update: dict):
         else:
             telegram_send_message(
                 chat_id,
-                "Чтобы отправить подписанное соглашение, пришли его как файл (PDF) и "
-                "укажи свое имя в подписи.",
+                "Чтобы отправить подписанное соглашение, пришли его как файл (PDF).",
             )
     elif "document" in message or "photo" in message:
         handle_file_message(message)
